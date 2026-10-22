@@ -1,10 +1,10 @@
 import React from 'react';
-import { Clock, CheckCircle2, AlertTriangle, XCircle, Archive, ShieldOff } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, Archive, Landmark, ShieldOff, XCircle } from 'lucide-react';
 
-export default function BatchStatusBadge({ statusInfo }) {
+export default function BatchStatusBadge({ statusInfo, showTreasuryTag = false }) {
   if (!statusInfo) return null;
 
-  const { status, label, color } = statusInfo;
+  const { status, label, isTreasury } = statusInfo;
 
   const configs = {
     'Active': {
@@ -17,19 +17,24 @@ export default function BatchStatusBadge({ statusInfo }) {
       dot: 'bg-amber-400 animate-pulse',
       icon: AlertTriangle
     },
-    'Expired': {
-      bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-      dot: 'bg-rose-400',
-      icon: XCircle
+    'Returned to Treasury': {
+      bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+      dot: 'bg-blue-400',
+      icon: Landmark
     },
     'Exhausted': {
       bg: 'bg-slate-800 text-slate-400 border-white/[0.06]',
       dot: 'bg-slate-500',
       icon: Archive
     },
+    'Expired': {
+      bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+      dot: 'bg-rose-400',
+      icon: XCircle
+    },
     'Surrendered': {
-      bg: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
-      dot: 'bg-blue-400',
+      bg: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
+      dot: 'bg-indigo-400',
       icon: ShieldOff
     }
   };
@@ -38,12 +43,20 @@ export default function BatchStatusBadge({ statusInfo }) {
   const Icon = current.icon;
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border tabular-nums whitespace-nowrap ${current.bg}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${current.dot}`} />
-      <Icon className="w-3 h-3 shrink-0" />
-      <span>{label}</span>
-    </span>
+    <div className="inline-flex items-center gap-1.5 flex-wrap">
+      {showTreasuryTag && isTreasury && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+          <Landmark className="w-2.5 h-2.5" />
+          <span>Treasury</span>
+        </span>
+      )}
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border tabular-nums whitespace-nowrap ${current.bg}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${current.dot}`} />
+        <Icon className="w-3 h-3 shrink-0" />
+        <span>{label}</span>
+      </span>
+    </div>
   );
 }

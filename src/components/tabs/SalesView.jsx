@@ -8,18 +8,23 @@ import {
   Search,
   AlertTriangle,
   FileCheck2,
-  Clock
+  Clock,
+  Landmark
 } from 'lucide-react';
 import KpiCard from '../KpiCard';
 import AgentList from '../agents/AgentList';
 import AgentModal from '../agents/AgentModal';
 import SubBuyerModal from '../agents/SubBuyerModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import WithdrawModal from '../passes/WithdrawModal';
 import { getNextBatchForDispatch, getValidPassCount } from '../../utils/passHelpers';
 
 export default function SalesView({
   sales,
   passBatches = [],
+  treasuryBalance = 0,
+  handleWithdrawFromTreasury,
+  setActiveTab,
   agents = [],
   selectedAgent,
   setSelectedAgent,
@@ -45,6 +50,7 @@ export default function SalesView({
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
   const [isSubBuyerModalOpen, setIsSubBuyerModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -442,12 +448,30 @@ export default function SalesView({
 
             {/* Govt Transit Pass Batch Link Info / Alert */}
             {requestedPasses > 0 && isNoPassesAvailable ? (
-              <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-                <div>
-                  <div className="font-semibold">No valid passes available.</div>
-                  <div className="text-[11px] text-rose-400/80">Procure a new batch. Expired passes cannot be dispatched.</div>
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-rose-300">
+                      No active passes. Withdraw from Treasury or procure a new batch.
+                    </div>
+                    <div className="text-[11px] text-rose-300/80 mt-0.5">
+                      {treasuryBalance > 0
+                        ? `${treasuryBalance} passes available in Sam Blue Metal Treasury.`
+                        : 'Treasury balance is also empty. Please procure a new Govt batch.'}
+                    </div>
+                  </div>
                 </div>
+                {treasuryBalance > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsWithdrawModalOpen(true)}
+                    className="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    <span>Withdraw from Treasury ({treasuryBalance} available)</span>
+                  </button>
+                )}
               </div>
             ) : requestedPasses > 0 && isPassInsufficient ? (
               <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs flex items-center gap-2">
@@ -457,14 +481,22 @@ export default function SalesView({
             ) : requestedPasses > 0 && nextBatch ? (
               <div className="p-2.5 rounded-lg bg-slate-900/90 border border-amber-500/20 text-xs flex items-center justify-between">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <FileCheck2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  {nextBatch.isTreasury ? (
+                    <Landmark className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  ) : (
+                    <FileCheck2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  )}
                   <span className="text-slate-400 text-[11px]">Pass from:</span>
-                  <span className="font-semibold text-amber-300 font-mono text-[11px] truncate">
-                    {nextBatch.batchNo}
+                  <span className={`font-semibold font-mono text-[11px] truncate ${nextBatch.isTreasury ? 'text-blue-300' : 'text-amber-300'}`}>
+                    {nextBatch.isTreasury ? `Treasury batch ${nextBatch.batchNo}` : nextBatch.batchNo}
                   </span>
                 </div>
                 <span className="text-[11px] font-medium text-slate-300 tabular-nums shrink-0 ml-2">
-                  {nextBatch.daysLeft <= 0 ? 'expires today' : `expires in ${nextBatch.daysLeft} days`}
+                  {nextBatch.isTreasury ? (
+                    <span className="text-blue-300 font-semibold">no expiry</span>
+                  ) : (
+                    nextBatch.daysLeft <= 0 ? 'expires today' : `expires in ${nextBatch.daysLeft} days`
+                  )}
                 </span>
               </div>
             ) : null}
@@ -621,6 +653,18 @@ export default function SalesView({
         confirmVariant={confirmDialog.confirmVariant}
         onConfirm={confirmDialog.onConfirm}
         onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Withdraw from Treasury Modal */}
+      <WithdrawModal
+        isOpen={isWithdrawModalOpen}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        treasuryBalance={treasuryBalance}
+        onWithdraw={(count, note) => {
+          if (handleWithdrawFromTreasury) {
+            handleWithdrawFromTreasury(count, note);
+          }
+        }}
       />
     </motion.div>
   );

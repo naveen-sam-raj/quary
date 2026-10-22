@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, X, Check, Clock, AlertTriangle } from 'lucide-react';
+import { Settings, X, Check, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSettings }) {
   const [validityDays, setValidityDays] = useState(settings?.defaultValidityDays || 30);
   const [warningDays, setWarningDays] = useState(settings?.warningDays || 7);
+  const [lowStockLimit, setLowStockLimit] = useState(settings?.lowStockLimit || 10);
 
   useEffect(() => {
     if (settings) {
       setValidityDays(settings.defaultValidityDays || 30);
       setWarningDays(settings.warningDays || 7);
+      setLowStockLimit(settings.lowStockLimit || 10);
     }
   }, [settings, isOpen]);
 
@@ -27,7 +29,8 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
     e.preventDefault();
     onSaveSettings({
       defaultValidityDays: Number(validityDays) || 30,
-      warningDays: Number(warningDays) || 7
+      warningDays: Number(warningDays) || 7,
+      lowStockLimit: Number(lowStockLimit) || 10
     });
     onClose();
   };
@@ -48,22 +51,23 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
             </div>
             <div>
               <h3 className="text-sm font-bold text-white tracking-tight">
-                Govt Pass Expiry Rules & Settings
+                Govt Pass Expiry & Treasury Rules
               </h3>
               <p className="text-[11px] text-slate-400">
-                Configure default validity and alert warning thresholds
+                Configure default validity, alert thresholds and low-stock limits
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
+          {/* Default Batch Validity */}
           <div>
             <label className="text-slate-300 font-semibold block mb-1">
               Default Batch Validity (Days)
@@ -85,6 +89,7 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
             </p>
           </div>
 
+          {/* Warning Alert Threshold */}
           <div>
             <label className="text-slate-300 font-semibold block mb-1">
               Warning Alert Threshold (Days Before Expiry)
@@ -102,7 +107,29 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Batches with fewer than this many days remaining will display as &quot;Expiring Soon&quot; and trigger dashboard warnings.
+              Batches with fewer than this many days remaining will display &quot;Expiring Soon&quot; and trigger dashboard warnings.
+            </p>
+          </div>
+
+          {/* Low Stock Limit */}
+          <div>
+            <label className="text-slate-300 font-semibold block mb-1">
+              Low Stock Warning Threshold (Passes)
+            </label>
+            <div className="relative">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={lowStockLimit}
+                onChange={(e) => setLowStockLimit(e.target.value)}
+                className="w-full bg-slate-900 border border-white/[0.1] rounded-lg pl-9 pr-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400 tabular-nums"
+                required
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              When total active passes fall below this limit, a low stock warning banner and notification will appear.
             </p>
           </div>
 
@@ -110,7 +137,7 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/[0.08] transition"
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/[0.08] transition cursor-pointer"
             >
               Cancel
             </button>

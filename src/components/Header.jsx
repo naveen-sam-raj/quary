@@ -23,6 +23,7 @@ export default function Header({
   setActiveTab,
   stats,
   passBatches = [],
+  passSettings = { defaultValidityDays: 30, warningDays: 7, lowStockLimit: 10 },
   isDarkTheme,
   setIsDarkTheme,
   onOpenSearch,
@@ -41,33 +42,45 @@ export default function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Compute expiry alerts
+  // Compute expiry alerts & low stock alerts
   const alerts = useMemo(() => {
     const list = [];
+    const warningDays = passSettings?.warningDays || 7;
+    const lowLimit = passSettings?.lowStockLimit || 10;
+
+    let activeCount = 0;
+
     passBatches.forEach(b => {
-      const statusInfo = getBatchStatus(b);
-      const fee = Number(b.costPerPass || 0);
-      if (statusInfo.status === 'Expiring Soon' && statusInfo.unused > 0) {
+      const statusInfo = getBatchStatus(b, undefined, warningDays);
+      if (statusInfo.status === 'Active' || statusInfo.status === 'Expiring Soon') {
+        activeCount += statusInfo.unused;
+      }
+
+      if (statusInfo.status === 'Expiring Soon' && statusInfo.unused > 0 && b.source !== 'treasury') {
         list.push({
           id: b.id,
           type: 'warning',
           title: `${statusInfo.unused} passes from ${b.batchNo} expire soon`,
-          message: `${statusInfo.unused} passes expire on ${formatPassDate(b.dueDate)}. Use them or lose ₹${(statusInfo.unused * fee).toLocaleString('en-IN')}.`,
+          message: `${statusInfo.unused} passes from ${b.batchNo} expire on ${formatPassDate(b.validTill || b.dueDate)} and will return to Treasury.`,
           daysLeft: statusInfo.daysLeft,
-          batchNo: b.batchNo
-        });
-      } else if (statusInfo.status === 'Expired' && statusInfo.unused > 0) {
-        list.push({
-          id: b.id,
-          type: 'danger',
-          title: `${statusInfo.unused} passes expired in ${b.batchNo}`,
-          message: `Due date ${formatPassDate(b.dueDate)} passed. ₹${(statusInfo.unused * fee).toLocaleString('en-IN')} wasted.`,
           batchNo: b.batchNo
         });
       }
     });
+
+    // Low stock warning when total available passes are below configured threshold
+    if (activeCount < lowLimit) {
+      list.push({
+        id: 'low-stock-alert',
+        type: 'danger',
+        title: `Low Pass Stock (${activeCount} passes remaining)`,
+        message: `Total active transit passes are below ${lowLimit}. Withdraw from Treasury or procure a new Govt batch.`,
+        batchNo: 'Stock Warning'
+      });
+    }
+
     return list;
-  }, [passBatches]);
+  }, [passBatches, passSettings]);
 
   const hasAlerts = alerts.length > 0;
   const getTabLabel = () => {
