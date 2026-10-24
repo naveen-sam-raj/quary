@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "seed": "node src/scripts/seed.js",
-    "seed:demo": "node src/scripts/seedDemo.js"
+    "seed:demo": "node src/scripts/seedDemo.js",
+    "seed:demo-passes": "node src/scripts/seedDemoPasses.js"
   },
   "keywords": [
     "express",
@@ -28,6 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
     "morgan": "^1.10.0",
+    "node-cron": "^4.6.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

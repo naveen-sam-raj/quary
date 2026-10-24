@@ -1,5 +1,6 @@
 import { Agent } from "../models/Agent.js";
 import { SubBuyer } from "../models/SubBuyer.js";
+import { Load } from "../models/Load.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 
 /**
@@ -48,18 +49,81 @@ export const getAgents = async (req, res) => {
 
 /**
  * GET /api/agents/summary
- * Placeholder returning agents list with totalLoads: 0 and totalAmount: 0 (Phase 3 aggregation)
+ * Real aggregation: totalLoads and totalAmount per agent including its sub-buyers' loads,
+ * per-sub-buyer loads and amounts, and a topAgent flag for the highest amount.
  */
 export const getAgentsSummary = async (req, res) => {
-  const agents = await Agent.find({ isDeleted: false })
-    .sort({ name: 1 })
-    .lean();
+  const [agents, subBuyers, agentLoadsAgg, subBuyerLoadsAgg] = await Promise.all([
+    Agent.find({ isDeleted: false }).sort({ name: 1 }).lean(),
+    SubBuyer.find({ isDeleted: false }).sort({ name: 1 }).lean(),
+    Load.aggregate([
+      {
+        $group: {
+          _id: "$agentId",
+          totalLoads: { $sum: 1 },
+          totalAmount: { $sum: "$amount" }
+        }
+      }
+    ]),
+    Load.aggregate([
+      {
+        $match: { subBuyerId: { $ne: null } }
+      },
+      {
+        $group: {
+          _id: "$subBuyerId",
+          totalLoads: { $sum: 1 },
+          totalAmount: { $sum: "$amount" }
+        }
+      }
+    ])
+  ]);
 
-  const items = agents.map((agent) => ({
-    ...agent,
-    totalLoads: 0,
-    totalAmount: 0
-  }));
+  // Index load stats
+  const agentLoadsMap = new Map(
+    agentLoadsAgg.map((item) => [item._id.toString(), { totalLoads: item.totalLoads, totalAmount: item.totalAmount }])
+  );
+  const subBuyerLoadsMap = new Map(
+    subBuyerLoadsAgg.map((item) => [item._id.toString(), { totalLoads: item.totalLoads, totalAmount: item.totalAmount }])
+  );
+
+  // Group sub-buyers under their respective agents
+  const subBuyersByAgent = new Map();
+  for (const sb of subBuyers) {
+    const aid = sb.agentId.toString();
+    if (!subBuyersByAgent.has(aid)) {
+      subBuyersByAgent.set(aid, []);
+    }
+    const sbStats = subBuyerLoadsMap.get(sb._id.toString()) || { totalLoads: 0, totalAmount: 0 };
+    subBuyersByAgent.get(aid).push({
+      ...sb,
+      totalLoads: sbStats.totalLoads,
+      totalAmount: sbStats.totalAmount
+    });
+  }
+
+  // Find max amount across agents to assign topAgent flag
+  let maxAmount = 0;
+  for (const agent of agents) {
+    const stats = agentLoadsMap.get(agent._id.toString()) || { totalLoads: 0, totalAmount: 0 };
+    if (stats.totalAmount > maxAmount) {
+      maxAmount = stats.totalAmount;
+    }
+  }
+
+  const items = agents.map((agent) => {
+    const aid = agent._id.toString();
+    const stats = agentLoadsMap.get(aid) || { totalLoads: 0, totalAmount: 0 };
+    const agentSubBuyers = subBuyersByAgent.get(aid) || [];
+
+    return {
+      ...agent,
+      totalLoads: stats.totalLoads,
+      totalAmount: stats.totalAmount,
+      subBuyers: agentSubBuyers,
+      topAgent: maxAmount > 0 && stats.totalAmount === maxAmount
+    };
+  });
 
   return sendSuccess(
     res,
@@ -183,9 +247,7 @@ export const deleteAgent = async (req, res) => {
     return sendError(res, "Agent not found", 404);
   }
 
-  // TODO: in Phase 3, check linked loads before deleting
-
-  // Soft delete the agent
+  // Soft delete the agent (history preserved, loads stay intact)
   agent.isDeleted = true;
   agent.status = "inactive";
   await agent.save();

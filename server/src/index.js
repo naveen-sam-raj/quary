@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import apiRoutes from "./routes/index.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
+import { startPassExpiryCron } from "./cron/passExpiryJob.js";
 
 // Load environment variables
 dotenv.config();
@@ -77,6 +78,9 @@ const server = app.listen(PORT, () => {
   console.log(`  Auth Base:    http://localhost:${PORT}/api/auth`);
   console.log(`  Allowed CORS: ${allowedOrigins.join(", ")}`);
   console.log(`===============================================`);
+
+  // Start background cron jobs
+  startPassExpiryCron();
 });
 
 // Graceful process termination

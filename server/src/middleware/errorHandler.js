@@ -14,7 +14,7 @@ export const notFoundHandler = (req, res) => {
  * Ensures consistent response format: { success: false, data: null, message: "..." }
  */
 export const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   let message = err.message || "Internal server error";
 
   // Mongoose validation error
