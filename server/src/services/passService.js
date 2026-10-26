@@ -27,6 +27,8 @@ export const withTransaction = async (fn) => {
       (error.message.includes("replica set") ||
         error.message.includes("Transaction numbers are only allowed"))
     ) {
+      if (process.env.NODE_ENV === "production") throw error;
+      console.warn("[Transaction] Standalone MongoDB detected, running WITHOUT transaction:", error.message);
       return await fn(null);
     }
     throw error;

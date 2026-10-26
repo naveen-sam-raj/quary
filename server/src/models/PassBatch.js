@@ -69,7 +69,6 @@ const passBatchSchema = new mongoose.Schema(
 );
 
 // Indexes
-passBatchSchema.index({ batchNo: 1 }, { unique: true });
 passBatchSchema.index({ source: 1, status: 1 });
 passBatchSchema.index({ validTill: 1 });
 passBatchSchema.index({ createdAt: 1 });

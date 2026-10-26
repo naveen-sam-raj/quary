@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "seed": "node src/scripts/seed.js",
     "seed:demo": "node src/scripts/seedDemo.js",
-    "seed:demo-passes": "node src/scripts/seedDemoPasses.js"
+    "seed:demo-passes": "node src/scripts/seedDemoPasses.js",
+    "seed:viewer": "node src/scripts/seedViewer.js"
   },
   "keywords": [
     "express",
