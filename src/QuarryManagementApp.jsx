@@ -13,6 +13,7 @@ import PassesView from './components/tabs/PassesView';
 import ReportsView from './components/tabs/ReportsView';
 
 import { useAgents } from './hooks/useAgents';
+import { useLoads } from './hooks/useLoads';
 
 import {
   getPassSettings,
@@ -82,7 +83,7 @@ export default function QuarryManagementApp() {
   } = useAgents();
 
   // Core Data State
-  const [sales, setSales] = useState(INITIAL_SALES);
+  const { loads: sales, addLoad, isLoading: isLoadingSales } = useLoads();
   const [purchases, setPurchases] = useState(INITIAL_PURCHASES);
 
   // Pass Settings State (Default validity: 30 days, warning: 7 days, low stock: 10 passes)
@@ -313,40 +314,35 @@ export default function QuarryManagementApp() {
   }, [purchases, stats.totalPurchaseAmount]);
 
   // Handlers
-  const handleAddSale = (e) => {
+  const handleAddSale = async (e) => {
     e.preventDefault();
     if (!newSale.amount || !newSale.lorryNo) return;
-    const passesUsedNum = Number(newSale.passesUsed || 0);
 
-    let deductionsList = [];
-    let passSource = 'govt';
-
-    // If passes are used, consume FIFO from batches that expire first, falling back to Treasury
-    if (passesUsedNum > 0) {
-      const deduction = consumePassFIFO(passBatches, passesUsedNum);
-      if (!deduction.success) {
-        showToast(deduction.error, 'error');
-        return;
-      }
-      setPassBatches(deduction.updatedBatches);
-      deductionsList = deduction.deductions;
-      passSource = deduction.deductions[0]?.source || 'govt';
+    const targetAgent = agents.find((a) => a.name === newSale.agentName);
+    if (!targetAgent) {
+      showToast('Please select a valid agent', 'error');
+      return;
     }
 
-    const entry = {
-      id: `S-${100 + sales.length + 1}`,
-      date: new Date().toISOString().split('T')[0],
-      ...newSale,
-      units: Number(newSale.units),
-      passesUsed: passesUsedNum,
-      amount: Number(newSale.amount),
-      passDeductions: deductionsList,
-      passSource,
-      batchNo: deductionsList.map(d => d.batchNo).join(', ')
-    };
-    setSales([entry, ...sales]);
-    setNewSale({ ...newSale, lorryNo: '', amount: '' });
-    showToast(`✓ Sale dispatched for Lorry ${entry.lorryNo}`);
+    const targetSubBuyer = subBuyers.find(
+      (sb) =>
+        sb.name === newSale.subBuyerName &&
+        (sb.agentId === targetAgent.id || sb.agentId === targetAgent._id || sb.agentName === targetAgent.name)
+    );
+
+    try {
+      await addLoad({
+        agentId: targetAgent._id || targetAgent.id,
+        subBuyerId: targetSubBuyer?._id || targetSubBuyer?.id,
+        lorryNo: newSale.lorryNo,
+        material: newSale.material,
+        quantity: Number(newSale.units || 1),
+        amount: Number(newSale.amount)
+      });
+      setNewSale({ ...newSale, lorryNo: '', amount: '' });
+    } catch {
+      // toast notification handled by mutation
+    }
   };
 
   const handleAddPurchase = (e) => {
@@ -511,6 +507,7 @@ export default function QuarryManagementApp() {
                 showToast={showToast}
                 formatDate={formatDate}
                 isLoadingAgents={isLoadingAgents}
+                isLoadingSales={isLoadingSales}
               />
             )}
 

@@ -46,7 +46,8 @@ export default function SalesView({
   topAgentName,
   showToast,
   formatDate,
-  isLoadingAgents = false
+  isLoadingAgents = false,
+  isLoadingSales = false
 }) {
   const { isViewer } = useAuth();
 
@@ -535,18 +536,21 @@ export default function SalesView({
             <button
               type="submit"
               disabled={
+                isViewer ||
                 activeAgents.length === 0 ||
                 (requestedPasses > 0 && isPassInsufficient) ||
                 (requestedPasses > 0 && isNoPassesAvailable)
               }
-              className={`w-full mt-2 py-2.5 rounded-lg text-slate-950 font-bold transition flex items-center justify-center gap-1.5 shadow-md ${
-                activeAgents.length > 0 && !isPassInsufficient && !(requestedPasses > 0 && isNoPassesAvailable)
-                  ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/10 cursor-pointer'
+              className={`w-full mt-2 py-2.5 rounded-lg font-bold transition flex items-center justify-center gap-1.5 shadow-md ${
+                isViewer
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/[0.05]'
+                  : activeAgents.length > 0 && !isPassInsufficient && !(requestedPasses > 0 && isNoPassesAvailable)
+                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/10 cursor-pointer'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
               }`}
             >
               <Plus className="w-4 h-4" />
-              <span>Record Dispatch</span>
+              <span>{isViewer ? 'Read-Only Mode' : 'Record Dispatch'}</span>
             </button>
           </form>
         </div>
@@ -559,7 +563,11 @@ export default function SalesView({
                 Dispatched Loads: {selectedAgent} ({selectedSubBuyer})
               </h3>
               <p className="text-xs text-slate-400">
-                {filteredSales.length === 1 ? '1 load record' : `${filteredSales.length} load records`}
+                {isLoadingSales
+                  ? 'Loading loads from API...'
+                  : filteredSales.length === 1
+                  ? '1 load record'
+                  : `${filteredSales.length} load records`}
               </p>
             </div>
 
@@ -589,39 +597,66 @@ export default function SalesView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {filteredSales.map(s => (
-                  <tr key={s.id} className="hover:bg-slate-800/30 transition">
-                    <td className="py-3 px-3 text-slate-400 tabular-nums">
-                      <div className="font-semibold text-slate-300">{formatDate(s.date)}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{s.id}</div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="font-semibold text-white">{s.subBuyerName}</span>
-                      <span className="text-slate-400 block text-[10px]">under {s.agentName}</span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-300">
-                      {s.material}
-                      <span className="text-slate-400 block text-[10px]">
-                        {s.units} {s.units === 1 ? 'Unit' : 'Units'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-mono font-medium text-amber-300">
-                      {s.lorryNo}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                        -{s.passesUsed}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-right font-bold text-emerald-400 tabular-nums">
-                      ₹{Number(s.amount).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                ))}
+                {isLoadingSales ? (
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="py-3 px-3">
+                        <div className="h-3.5 bg-slate-800 rounded w-20 mb-1" />
+                        <div className="h-2.5 bg-slate-850 rounded w-12" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="h-3.5 bg-slate-800 rounded w-24 mb-1" />
+                        <div className="h-2.5 bg-slate-850 rounded w-16" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="h-3.5 bg-slate-800 rounded w-28" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="h-3.5 bg-slate-800 rounded w-24" />
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="h-5 bg-slate-800 rounded w-10" />
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="h-4 bg-slate-800 rounded w-16 ml-auto" />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  filteredSales.map(s => (
+                    <tr key={s.id} className="hover:bg-slate-800/30 transition">
+                      <td className="py-3 px-3 text-slate-400 tabular-nums">
+                        <div className="font-semibold text-slate-300">{formatDate(s.date)}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{s.id}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="font-semibold text-white">{s.subBuyerName}</span>
+                        <span className="text-slate-400 block text-[10px]">under {s.agentName}</span>
+                      </td>
+                      <td className="py-3 px-3 text-slate-300">
+                        {s.material}
+                        <span className="text-slate-400 block text-[10px]">
+                          {s.units} {s.units === 1 ? 'Unit' : 'Units'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 font-mono font-medium text-amber-300">
+                        {s.lorryNo}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                          -{s.passesUsed}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-emerald-400 tabular-nums">
+                        ₹{Number(s.amount).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
 
-            {filteredSales.length === 0 && (
+            {!isLoadingSales && filteredSales.length === 0 && (
               <div className="py-12 text-center text-xs text-slate-500">
                 No dispatch records match the selected filter.
               </div>
