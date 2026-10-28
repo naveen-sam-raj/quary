@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Users, UserPlus } from 'lucide-react';
+import { Plus, Search, Users, UserPlus, Loader2 } from 'lucide-react';
 import AgentCard from './AgentCard';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AgentList({
-  agents,
-  sales,
+  agents = [],
+  sales = [],
   selectedAgent,
   onSelectAgent,
   onAddAgent,
@@ -13,8 +14,10 @@ export default function AgentList({
   onDeleteAgent,
   getAgentStats,
   topAgentName,
-  onToast
+  onToast,
+  isLoading = false
 }) {
+  const { isViewer } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Active' | 'Inactive'
 
@@ -87,19 +90,50 @@ export default function AgentList({
             />
           </div>
 
-          {/* "+ Add Agent" Amber Ghost Button (Always visible, shrink-0) */}
-          <button
-            onClick={onAddAgent}
-            className="px-3.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Agent</span>
-          </button>
+          {/* "+ Add Agent" Amber Ghost Button (Hidden for viewers) */}
+          {!isViewer && (
+            <button
+              onClick={onAddAgent}
+              className="px-3.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Agent</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Loading Skeleton */}
+      {isLoading && (
+        <div
+          className="grid gap-4"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))'
+          }}
+        >
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="p-5 rounded-xl border border-white/[0.06] bg-[#111827]/60 h-44 animate-pulse flex flex-col justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-800" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-3.5 bg-slate-800 rounded w-2/3" />
+                  <div className="h-2.5 bg-slate-850 rounded w-1/3" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 bg-slate-800/80 rounded" />
+                <div className="h-3 bg-slate-800/60 rounded w-4/5" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Agents Grid with min 300px per card and equal heights */}
-      {filteredAgents.length > 0 && (
+      {!isLoading && filteredAgents.length > 0 && (
         <div
           className="grid gap-4"
           style={{
@@ -121,26 +155,28 @@ export default function AgentList({
             />
           ))}
 
-          {/* Dashed-border "+ New Agent" Card with equal height in same grid */}
-          <div
-            onClick={onAddAgent}
-            className="p-5 rounded-xl border border-dashed border-white/[0.15] hover:border-amber-500/50 bg-[#111827]/40 hover:bg-slate-800/40 transition-all flex flex-col items-center justify-center text-center cursor-pointer group h-full min-h-[170px]"
-          >
-            <div className="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-amber-500/15 border border-white/[0.08] group-hover:border-amber-500/30 flex items-center justify-center text-slate-400 group-hover:text-amber-400 transition mb-2">
-              <UserPlus className="w-5 h-5" />
+          {/* Dashed-border "+ New Agent" Card with equal height in same grid (Hidden for viewers) */}
+          {!isViewer && (
+            <div
+              onClick={onAddAgent}
+              className="p-5 rounded-xl border border-dashed border-white/[0.15] hover:border-amber-500/50 bg-[#111827]/40 hover:bg-slate-800/40 transition-all flex flex-col items-center justify-center text-center cursor-pointer group h-full min-h-[170px]"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-amber-500/15 border border-white/[0.08] group-hover:border-amber-500/30 flex items-center justify-center text-slate-400 group-hover:text-amber-400 transition mb-2">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-300 group-hover:text-white transition">
+                + New Agent
+              </span>
+              <span className="text-[10px] text-slate-500 group-hover:text-slate-400 mt-0.5">
+                Register buyer agency
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition">
-              + New Agent
-            </span>
-            <span className="text-[10px] text-slate-500 group-hover:text-slate-400 mt-0.5">
-              Register buyer agency
-            </span>
-          </div>
+          )}
         </div>
       )}
 
       {/* Empty State */}
-      {filteredAgents.length === 0 && (
+      {!isLoading && filteredAgents.length === 0 && (
         <div className="py-12 text-center rounded-xl bg-[#111827] border border-white/[0.06] p-6 space-y-3">
           <div className="w-12 h-12 rounded-xl bg-slate-800/80 flex items-center justify-center text-amber-400 mx-auto border border-amber-500/20">
             <Users className="w-6 h-6" />

@@ -77,7 +77,8 @@ export default function QuarryManagementApp() {
     toggleAgentStatus,
     addSubBuyer,
     getAgentStats,
-    getTopAgent
+    getTopAgent,
+    isLoading: isLoadingAgents
   } = useAgents();
 
   // Core Data State
@@ -509,6 +510,7 @@ export default function QuarryManagementApp() {
                 topAgentName={getTopAgent(sales)}
                 showToast={showToast}
                 formatDate={formatDate}
+                isLoadingAgents={isLoadingAgents}
               />
             )}
 

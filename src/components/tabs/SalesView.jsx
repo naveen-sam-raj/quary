@@ -18,6 +18,7 @@ import SubBuyerModal from '../agents/SubBuyerModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import WithdrawModal from '../passes/WithdrawModal';
 import { getNextBatchForDispatch, getValidPassCount } from '../../utils/passHelpers';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SalesView({
   sales,
@@ -44,8 +45,11 @@ export default function SalesView({
   getAgentStats,
   topAgentName,
   showToast,
-  formatDate
+  formatDate,
+  isLoadingAgents = false
 }) {
+  const { isViewer } = useAuth();
+
   // Modal & Dialog states
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
@@ -265,6 +269,7 @@ export default function SalesView({
         getAgentStats={calcAgentStats}
         topAgentName={computedTopAgent}
         onToast={showToast}
+        isLoading={isLoadingAgents}
       />
 
       {/* 3. Sub-buyers Filter Chips for Current Agent */}
@@ -277,13 +282,15 @@ export default function SalesView({
                 Sub-Buyers under {selectedAgent}
               </span>
             </div>
-            <button
-              onClick={() => setIsSubBuyerModalOpen(true)}
-              className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium transition flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Sub-Buyer</span>
-            </button>
+            {!isViewer && (
+              <button
+                onClick={() => setIsSubBuyerModalOpen(true)}
+                className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium transition flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Sub-Buyer</span>
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">

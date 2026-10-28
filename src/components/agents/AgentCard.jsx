@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Award, MoreVertical, Edit2, Power, Trash2, MapPin, Building, Phone, Copy, Check } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AgentCard({
   agent,
@@ -12,6 +13,7 @@ export default function AgentCard({
   onDelete,
   onToast
 }) {
+  const { isViewer } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef(null);
@@ -108,55 +110,57 @@ export default function AgentCard({
           </div>
 
           {/* ⋮ Menu fixed to the right */}
-          <div className="relative shrink-0" ref={menuRef} onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
-              title="Agent Options"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
+          {!isViewer && (
+            <div className="relative shrink-0" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                title="Agent Options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-            {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-36 bg-[#0E131F] border border-white/[0.12] rounded-xl shadow-2xl py-1 z-30 card-shine text-xs">
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onEdit(agent);
-                  }}
-                  className="w-full px-3 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/70 flex items-center gap-2 transition"
-                >
-                  <Edit2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Edit Agent</span>
-                </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-36 bg-[#0E131F] border border-white/[0.12] rounded-xl shadow-2xl py-1 z-30 card-shine text-xs">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onEdit(agent);
+                    }}
+                    className="w-full px-3 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/70 flex items-center gap-2 transition"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Edit Agent</span>
+                  </button>
 
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onToggleStatus(agent);
-                  }}
-                  className="w-full px-3 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/70 flex items-center gap-2 transition"
-                >
-                  <Power className={`w-3.5 h-3.5 ${agent.status === 'Active' ? 'text-slate-400' : 'text-emerald-400'}`} />
-                  <span>{agent.status === 'Active' ? 'Deactivate' : 'Activate'}</span>
-                </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onToggleStatus(agent);
+                    }}
+                    className="w-full px-3 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800/70 flex items-center gap-2 transition"
+                  >
+                    <Power className={`w-3.5 h-3.5 ${agent.status === 'Active' ? 'text-slate-400' : 'text-emerald-400'}`} />
+                    <span>{agent.status === 'Active' ? 'Deactivate' : 'Activate'}</span>
+                  </button>
 
-                <div className="my-1 border-t border-white/[0.06]" />
+                  <div className="my-1 border-t border-white/[0.06]" />
 
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onDelete(agent);
-                  }}
-                  className="w-full px-3 py-2 text-left text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2 transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Agent</span>
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDelete(agent);
+                    }}
+                    className="w-full px-3 py-2 text-left text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Agent</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Row 2: Phone number on its own full-width line with click-to-call & copy */}
