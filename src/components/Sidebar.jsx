@@ -1,5 +1,6 @@
 import React from 'react';
-import { Building2, AlertTriangle } from 'lucide-react';
+import { Building2, AlertTriangle, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({
   sidebarOpen,
@@ -9,6 +10,15 @@ export default function Sidebar({
   stats,
   hasExpiringPasses = false
 }) {
+  const { user, role, logout } = useAuth();
+
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : (user?.email ? user.email.slice(0, 2).toUpperCase() : 'BM');
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User';
+  const roleLabel = (role || 'viewer').toUpperCase();
+
   const navSections = [
     {
       label: 'OPERATIONS',
@@ -193,14 +203,28 @@ export default function Sidebar({
                 <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/[0.03] transition">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/[0.08] text-amber-400 font-bold text-xs flex items-center justify-center shrink-0">
-                      NS
+                      {initials}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-200 truncate">Naveen Sam</div>
-                      <div className="text-[11px] text-slate-500 truncate">Quarry Manager</div>
+                      <div className="text-xs font-semibold text-slate-200 truncate">{displayName}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`inline-block px-1.5 py-0.2 text-[10px] font-bold rounded tracking-wider ${
+                          role === 'admin'
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                            : 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                        }`}>
+                          {roleLabel}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="System Online" />
+                  <button
+                    onClick={logout}
+                    title="Sign Out"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer shrink-0"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -214,10 +238,17 @@ export default function Sidebar({
             <div className="p-2 border-t border-white/[0.06] bg-[#0B0F17] flex flex-col items-center gap-2">
               <div
                 className="w-8 h-8 rounded-full bg-slate-800 border border-white/[0.08] text-amber-400 font-bold text-xs flex items-center justify-center cursor-pointer"
-                title="Naveen Sam • Quarry Manager"
+                title={`${displayName} • ${roleLabel}`}
               >
-                NS
+                {initials}
               </div>
+              <button
+                onClick={logout}
+                title="Sign Out"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </div>
