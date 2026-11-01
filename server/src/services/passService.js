@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { PassBatch } from "../models/PassBatch.js";
 import { TreasuryLedger } from "../models/TreasuryLedger.js";
-import { getStartOfDayIST } from "../utils/date.js";
+import { Settings } from "../models/Settings.js";
+import { getStartOfDayIST, getDaysLeftIST } from "../utils/date.js";
 
 /**
  * Runs an asynchronous operation within a MongoDB transaction session.
@@ -364,4 +365,89 @@ export const withdrawFromTreasury = async (passes, note, userId, session = null)
   );
 
   return { batch, ledgerEntry };
+};
+
+/**
+ * Returns comprehensive pass inventory and treasury summary metrics.
+ * @returns {Promise<{
+ *   total: number,
+ *   totalBoughtFromGovt: number,
+ *   usedByLorries: number,
+ *   active: number,
+ *   activeRemaining: number,
+ *   expiringSoon: number,
+ *   treasuryBalance: number,
+ *   nextExpiry: object|null,
+ *   lowStock: boolean
+ * }>}
+ */
+export const getPassSummaryData = async () => {
+  await autoReturnExpired();
+
+  const [settings, { balance: treasuryBalance }, batches] = await Promise.all([
+    Settings.getSettings(),
+    getTreasuryBalance(),
+    PassBatch.find()
+  ]);
+
+  let totalBoughtFromGovt = 0;
+  let usedByLorries = 0;
+  let activeRemaining = 0;
+  let expiringSoonCount = 0;
+
+  const startOfToday = getStartOfDayIST(new Date());
+  let candidateGovtBatches = [];
+
+  for (const batch of batches) {
+    if (batch.source === "govt") {
+      totalBoughtFromGovt += batch.totalPasses;
+    }
+
+    usedByLorries += batch.usedPasses;
+
+    const remaining = Math.max(0, batch.totalPasses - batch.usedPasses - batch.returnedToTreasury);
+
+    if (batch.status === "active" && remaining > 0) {
+      activeRemaining += remaining;
+
+      if (batch.source === "govt" && batch.validTill && batch.validTill >= startOfToday) {
+        const daysLeft = getDaysLeftIST(batch.validTill);
+        if (daysLeft !== null && daysLeft <= settings.warningDays && daysLeft >= 0) {
+          expiringSoonCount += remaining;
+        }
+
+        candidateGovtBatches.push({
+          batchNo: batch.batchNo,
+          validTill: batch.validTill,
+          daysLeft,
+          passes: remaining
+        });
+      }
+    }
+  }
+
+  candidateGovtBatches.sort((a, b) => new Date(a.validTill) - new Date(b.validTill));
+
+  const nextExpiry =
+    candidateGovtBatches.length > 0
+      ? {
+          batchNo: candidateGovtBatches[0].batchNo,
+          daysLeft: candidateGovtBatches[0].daysLeft,
+          passes: candidateGovtBatches[0].passes
+        }
+      : null;
+
+  const lowStock = activeRemaining <= settings.lowStockLimit;
+
+  return {
+    total: totalBoughtFromGovt,
+    totalBoughtFromGovt,
+    usedByLorries,
+    active: activeRemaining,
+    activeRemaining,
+    expiringSoon: expiringSoonCount,
+    treasuryBalance,
+    nextExpiry,
+    lowStock
+  };
 };

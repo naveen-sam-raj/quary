@@ -4,7 +4,8 @@ import { Settings } from "../models/Settings.js";
 import {
   autoReturnExpired,
   getTreasuryBalance,
-  withTransaction
+  withTransaction,
+  getPassSummaryData
 } from "../services/passService.js";
 import {
   getDaysLeftIST,
@@ -169,70 +170,8 @@ export const returnBatchEarly = async (req, res) => {
  * { totalBoughtFromGovt, usedByLorries, activeRemaining, treasuryBalance, nextExpiry: { batchNo, daysLeft, passes }, lowStock }
  */
 export const getPassesSummary = async (req, res) => {
-  await autoReturnExpired();
-
-  const [settings, { balance: treasuryBalance }, batches] = await Promise.all([
-    Settings.getSettings(),
-    getTreasuryBalance(),
-    PassBatch.find()
-  ]);
-
-  let totalBoughtFromGovt = 0;
-  let usedByLorries = 0;
-  let activeRemaining = 0;
-
-  const startOfToday = getStartOfDayIST(new Date());
-  let candidateGovtBatches = [];
-
-  for (const batch of batches) {
-    if (batch.source === "govt") {
-      totalBoughtFromGovt += batch.totalPasses;
-    }
-
-    usedByLorries += batch.usedPasses;
-
-    const remaining = Math.max(0, batch.totalPasses - batch.usedPasses - batch.returnedToTreasury);
-
-    if (batch.status === "active" && remaining > 0) {
-      activeRemaining += remaining;
-
-      if (batch.source === "govt" && batch.validTill && batch.validTill >= startOfToday) {
-        candidateGovtBatches.push({
-          batchNo: batch.batchNo,
-          validTill: batch.validTill,
-          daysLeft: getDaysLeftIST(batch.validTill),
-          passes: remaining
-        });
-      }
-    }
-  }
-
-  // Find next expiry (earliest validTill >= startOfToday with remaining > 0)
-  candidateGovtBatches.sort((a, b) => new Date(a.validTill) - new Date(b.validTill));
-
-  const nextExpiry =
-    candidateGovtBatches.length > 0
-      ? {
-          batchNo: candidateGovtBatches[0].batchNo,
-          daysLeft: candidateGovtBatches[0].daysLeft,
-          passes: candidateGovtBatches[0].passes
-        }
-      : null;
-
-  const lowStock = activeRemaining <= settings.lowStockLimit;
-
-  return sendSuccess(
-    res,
-    {
-      totalBoughtFromGovt,
-      usedByLorries,
-      activeRemaining,
-      treasuryBalance,
-      nextExpiry,
-      lowStock
-    },
-    "Passes summary retrieved successfully"
-  );
+  const summary = await getPassSummaryData();
+  return sendSuccess(res, summary, "Passes summary retrieved successfully");
 };
 
 /**

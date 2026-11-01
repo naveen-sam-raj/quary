@@ -8,6 +8,7 @@ import passRoutes from "./pass.routes.js";
 import treasuryRoutes from "./treasury.routes.js";
 import settingsRoutes from "./settings.routes.js";
 import loadRoutes from "./load.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/passes", passRoutes);
 router.use("/treasury", treasuryRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/loads", loadRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;
