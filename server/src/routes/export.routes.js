@@ -1,5 +1,8 @@
-import { Router } from "express";
-import { exportLoadsExcel, exportPurchasesExcel } from "../controllers/export.controller.js";
+import {
+  exportLoadsExcel,
+  exportPurchasesExcel,
+  exportReportPDF
+} from "../controllers/export.controller.js";
 import { authRequired, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { validateQuery } from "../middleware/validate.js";
@@ -16,5 +19,8 @@ router.get("/loads.xlsx", validateQuery(dateRangeQuerySchema), asyncHandler(expo
 
 // GET /api/export/purchases.xlsx
 router.get("/purchases.xlsx", validateQuery(dateRangeQuerySchema), asyncHandler(exportPurchasesExcel));
+
+// GET /api/export/report.pdf
+router.get("/report.pdf", validateQuery(dateRangeQuerySchema), asyncHandler(exportReportPDF));
 
 export default router;
