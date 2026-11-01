@@ -70,6 +70,7 @@ export function useTreasury() {
       queryClient.invalidateQueries({ queryKey: ['pass-batches'] });
       queryClient.invalidateQueries({ queryKey: ['passes-summary'] });
       queryClient.invalidateQueries({ queryKey: ['pass-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       const batchNo = data?.batch?.batchNo ? ` (Batch: ${data.batch.batchNo})` : '';
       toast.success(`✓ Withdrawn ${data?.batch?.totalPasses || ''} passes from Treasury${batchNo}`);
     },

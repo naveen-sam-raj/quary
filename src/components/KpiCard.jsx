@@ -32,6 +32,16 @@ export default function KpiCard({
       iconBg: 'bg-slate-800 text-slate-300',
       stroke: '#94A3B8',
       trendBg: 'bg-slate-800 text-slate-300 border-slate-700'
+    },
+    blue: {
+      iconBg: 'bg-blue-500/10 text-blue-400',
+      stroke: '#3B82F6',
+      trendBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+    },
+    cyan: {
+      iconBg: 'bg-cyan-500/10 text-cyan-400',
+      stroke: '#06B6D4',
+      trendBg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
     }
   };
 

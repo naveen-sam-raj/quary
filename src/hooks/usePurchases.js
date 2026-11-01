@@ -110,6 +110,7 @@ export function usePurchases() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast.success(`✓ Recorded expense ₹${Number(data?.amount || 0).toLocaleString('en-IN')}`);
     },
     onError: (err) => {
@@ -140,6 +141,7 @@ export function usePurchases() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast.success('✓ Expense record updated');
     },
     onError: (err) => {
@@ -156,6 +158,7 @@ export function usePurchases() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast.success('Expense record deleted');
     },
     onError: (err) => {

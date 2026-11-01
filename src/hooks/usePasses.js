@@ -97,6 +97,7 @@ export function usePasses(warningDays = 7) {
       queryClient.invalidateQueries({ queryKey: ['pass-batches'] });
       queryClient.invalidateQueries({ queryKey: ['passes-summary'] });
       queryClient.invalidateQueries({ queryKey: ['pass-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast.success(`✓ Batch ${data?.batchNo || ''} registered successfully`);
     },
     onError: (err) => {
@@ -117,6 +118,7 @@ export function usePasses(warningDays = 7) {
       queryClient.invalidateQueries({ queryKey: ['pass-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-ledger'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast.success(`✓ Returned ${data?.returnedPasses || 0} passes to Sam Blue Metal Treasury`);
     },
     onError: (err) => {

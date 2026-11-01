@@ -59,6 +59,7 @@ export function useLoads() {
     queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
     queryClient.invalidateQueries({ queryKey: ['treasury-ledger'] });
     queryClient.invalidateQueries({ queryKey: ['agents'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   };
 
   // 3. Add Load Mutation

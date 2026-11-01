@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,52 +9,53 @@ import {
   CartesianGrid
 } from 'recharts';
 
-export default function SalesAreaChart({ sales, purchases, passBatches }) {
+export default function SalesAreaChart({ sales = [], purchases = [], passBatches = [], dailySeries = [] }) {
   const [metricFilter, setMetricFilter] = useState('both'); // 'both' | 'sales' | 'expenses'
 
-  // Pre-aggregate day-wise data from real sales & purchases
-  const timelineDates = ['10-14', '10-15', '10-16', '10-17', '10-18', '10-19', '10-20'];
-  
-  const chartData = timelineDates.map(dateKey => {
-    const daySales = sales
-      .filter(s => s.date && s.date.endsWith(dateKey))
-      .reduce((sum, s) => sum + Number(s.amount || 0), 0);
+  const formatChartDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
 
-    const dayPurchases = purchases
-      .filter(p => p.date && p.date.endsWith(dateKey))
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const chartData = useMemo(() => {
+    if (Array.isArray(dailySeries) && dailySeries.length > 0) {
+      return dailySeries.map((item) => ({
+        date: formatChartDate(item.date),
+        fullDate: item.date,
+        sales: Number(item.revenue || 0),
+        expenses: Number(item.expense || 0),
+        net: Number(item.revenue || 0) - Number(item.expense || 0)
+      }));
+    }
 
-    // Baseline fallback for days without direct entries to produce a realistic SaaS curve
-    const defaultSalesMap = {
-      '10-14': 25000,
-      '10-15': 49500,
-      '10-16': 37500,
-      '10-17': 50500,
-      '10-18': 40200,
-      '10-19': 32000,
-      '10-20': 48000
-    };
+    // Fallback if dailySeries not passed
+    const timelineDates = ['10-14', '10-15', '10-16', '10-17', '10-18', '10-19', '10-20'];
+    return timelineDates.map((dateKey) => {
+      const daySales = sales
+        .filter((s) => s.date && s.date.endsWith(dateKey))
+        .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
-    const defaultPurchasesMap = {
-      '10-14': 18500,
-      '10-15': 8400,
-      '10-16': 34000,
-      '10-17': 37600,
-      '10-18': 22000,
-      '10-19': 12000,
-      '10-20': 15000
-    };
+      const dayPurchases = purchases
+        .filter((p) => p.date && p.date.endsWith(dateKey))
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const finalSales = daySales > 0 ? daySales : defaultSalesMap[dateKey] || 20000;
-    const finalPurchases = dayPurchases > 0 ? dayPurchases : defaultPurchasesMap[dateKey] || 15000;
-
-    return {
-      date: `Oct ${dateKey.split('-')[1]}`,
-      sales: finalSales,
-      expenses: finalPurchases,
-      net: finalSales - finalPurchases
-    };
-  });
+      return {
+        date: `Oct ${dateKey.split('-')[1]}`,
+        sales: daySales,
+        expenses: dayPurchases,
+        net: daySales - dayPurchases
+      };
+    });
+  }, [dailySeries, sales, purchases]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
