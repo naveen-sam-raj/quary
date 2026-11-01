@@ -14,6 +14,7 @@ import ReportsView from './components/tabs/ReportsView';
 
 import { useAgents } from './hooks/useAgents';
 import { useLoads } from './hooks/useLoads';
+import { usePurchases } from './hooks/usePurchases';
 
 import {
   getPassSettings,
@@ -44,13 +45,7 @@ const INITIAL_SALES = [
   { id: 'S-108', date: '2026-10-18', agentName: 'Murugan Agencies', subBuyerName: 'Senthil', material: 'M-Sand (Manufactured Sand)', units: 4, lorryNo: 'TN 59 AL 3309', passesUsed: 1, amount: 21000, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
 ];
 
-const INITIAL_PURCHASES = [
-  { id: 'P-201', date: '2026-10-14', category: 'JCB Rent', vendor: 'velavan Earthmovers', description: 'JCB 3DX 2 Days Loading Work', amount: 18500, paymentMode: 'UPI / GPay' },
-  { id: 'P-202', date: '2026-10-15', category: 'Food Rent (Mess & Tea)', vendor: 'Annalakshmi Mess', description: 'Workers & Drivers Weekly Food + Tea', amount: 8400, paymentMode: 'Cash' },
-  { id: 'P-203', date: '2026-10-16', category: 'Hitachi / Excavator Rent', vendor: 'Sri Sastha Heavy Equipments', description: 'Hitachi EX200 Breaker & Quarry Pit Work', amount: 34000, paymentMode: 'Bank Transfer' },
-  { id: 'P-204', date: '2026-10-17', category: 'Tipper & Machinery Diesel', vendor: 'IndianOil Bunks', description: '400 Litres Diesel for Crusher & Tipper', amount: 37600, paymentMode: 'Bank Transfer' },
-  { id: 'P-205', date: '2026-10-18', category: 'Explosives / Blasting', vendor: 'Licensed Quarry Blasters', description: 'Drilling & Compressor Blasting Charges', amount: 22000, paymentMode: 'Cash' },
-];
+
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
@@ -84,7 +79,13 @@ export default function QuarryManagementApp() {
 
   // Core Data State
   const { loads: sales, addLoad, isLoading: isLoadingSales } = useLoads();
-  const [purchases, setPurchases] = useState(INITIAL_PURCHASES);
+  const {
+    purchases,
+    addPurchase,
+    updatePurchase,
+    deletePurchase,
+    isLoading: isLoadingPurchases
+  } = usePurchases();
 
   // Pass Settings State (Default validity: 30 days, warning: 7 days, low stock: 10 passes)
   const [passSettings, setPassSettings] = useState(() => getPassSettings());
@@ -345,18 +346,39 @@ export default function QuarryManagementApp() {
     }
   };
 
-  const handleAddPurchase = (e) => {
+  const handleAddPurchase = async (e) => {
     e.preventDefault();
     if (!newPurchase.amount || !newPurchase.vendor) return;
-    const entry = {
-      id: `P-${200 + purchases.length + 1}`,
-      date: new Date().toISOString().split('T')[0],
-      ...newPurchase,
-      amount: Number(newPurchase.amount)
-    };
-    setPurchases([entry, ...purchases]);
-    setNewPurchase({ ...newPurchase, vendor: '', description: '', notes: '', amount: '' });
-    showToast(`✓ Recorded expense ₹${entry.amount.toLocaleString('en-IN')}`);
+    try {
+      await addPurchase({
+        date: newPurchase.date || new Date().toISOString().split('T')[0],
+        category: newPurchase.category,
+        vendor: newPurchase.vendor,
+        description: newPurchase.description,
+        notes: newPurchase.notes,
+        amount: Number(newPurchase.amount),
+        paymentMode: newPurchase.paymentMode
+      });
+      setNewPurchase({ ...newPurchase, vendor: '', description: '', notes: '', amount: '' });
+    } catch {
+      // toast handled in hook
+    }
+  };
+
+  const handleUpdatePurchase = async (id, updatedData) => {
+    try {
+      await updatePurchase(id, updatedData);
+    } catch {
+      // toast handled in hook
+    }
+  };
+
+  const handleDeletePurchase = async (id) => {
+    try {
+      await deletePurchase(id);
+    } catch {
+      // toast handled in hook
+    }
   };
 
   const handleAddPassBatch = (e) => {
@@ -520,7 +542,10 @@ export default function QuarryManagementApp() {
                 newPurchase={newPurchase}
                 setNewPurchase={setNewPurchase}
                 handleAddPurchase={handleAddPurchase}
+                handleUpdatePurchase={handleUpdatePurchase}
+                handleDeletePurchase={handleDeletePurchase}
                 formatDate={formatDate}
+                isLoading={isLoadingPurchases}
               />
             )}
 
