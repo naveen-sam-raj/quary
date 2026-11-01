@@ -10,6 +10,7 @@ import settingsRoutes from "./settings.routes.js";
 import loadRoutes from "./load.routes.js";
 import dashboardRoutes from "./dashboard.routes.js";
 import backupRoutes from "./backup.routes.js";
+import exportRoutes from "./export.routes.js";
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use("/settings", settingsRoutes);
 router.use("/loads", loadRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/backup", backupRoutes);
+router.use("/export", exportRoutes);
 
 export default router;
