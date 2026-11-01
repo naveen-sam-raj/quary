@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Wrench, Utensils, Fuel, Plus, Edit2, Trash2, X, Check } from 'lucide-react';
+import { ShoppingCart, Wrench, Utensils, Fuel, Plus, Edit2, Trash2, X, Check, FileSpreadsheet } from 'lucide-react';
 import KpiCard from '../KpiCard';
 import { useAuth } from '../../context/AuthContext';
+import { downloadPurchasesExcel } from '../../utils/exportHelpers';
 
 export default function PurchasesView({
   purchases = [],
@@ -17,6 +18,7 @@ export default function PurchasesView({
 }) {
   const { isViewer, isAdmin } = useAuth();
   const [editingId, setEditingId] = useState(null);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const totalPurchaseAmount = purchases.reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
@@ -339,9 +341,29 @@ export default function PurchasesView({
                 {isLoading ? 'Loading expenses from API...' : entryText}
               </p>
             </div>
-            <span className="text-xs font-bold text-rose-400 tabular-nums">
-              Total: ₹{totalPurchaseAmount.toLocaleString('en-IN')}
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    setIsExportingExcel(true);
+                    await downloadPurchasesExcel();
+                  } catch {
+                    // toast handled in helper
+                  } finally {
+                    setIsExportingExcel(false);
+                  }
+                }}
+                disabled={isExportingExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                title="Export purchases to Excel (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>{isExportingExcel ? 'Exporting...' : 'Export Excel'}</span>
+              </button>
+              <span className="text-xs font-bold text-rose-400 tabular-nums">
+                Total: ₹{totalPurchaseAmount.toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

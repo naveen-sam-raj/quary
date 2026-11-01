@@ -9,8 +9,10 @@ import {
   AlertTriangle,
   FileCheck2,
   Clock,
-  Landmark
+  Landmark,
+  FileSpreadsheet
 } from 'lucide-react';
+import { downloadLoadsExcel } from '../../utils/exportHelpers';
 import KpiCard from '../KpiCard';
 import AgentList from '../agents/AgentList';
 import AgentModal from '../agents/AgentModal';
@@ -56,6 +58,7 @@ export default function SalesView({
   const [editingAgent, setEditingAgent] = useState(null);
   const [isSubBuyerModalOpen, setIsSubBuyerModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -572,16 +575,37 @@ export default function SalesView({
               </p>
             </div>
 
-            {/* Search in sales */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
-              <input
-                type="text"
-                placeholder="Filter lorry or material..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-900 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg border border-white/[0.08] placeholder-slate-500 focus:outline-none focus:border-amber-400 w-48 sm:w-56"
-              />
+            {/* Actions: Search & Export Excel */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Filter lorry or material..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-slate-900 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg border border-white/[0.08] placeholder-slate-500 focus:outline-none focus:border-amber-400 w-44 sm:w-52"
+                />
+              </div>
+
+              <button
+                onClick={async () => {
+                  try {
+                    setIsExportingExcel(true);
+                    await downloadLoadsExcel();
+                  } catch {
+                    // toast handled in helper
+                  } finally {
+                    setIsExportingExcel(false);
+                  }
+                }}
+                disabled={isExportingExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                title="Export dispatched loads to Excel (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>{isExportingExcel ? 'Exporting...' : 'Export Excel'}</span>
+              </button>
             </div>
           </div>
 
