@@ -80,30 +80,26 @@ export default function PassesView({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeMenuId]);
 
-  // Treasury Stats & Balances
-  const treasuryBalance = useMemo(() => getTreasuryBalance(treasuryLedger), [treasuryLedger]);
-  const treasuryStats = useMemo(
-    () => getTreasuryStats(treasuryLedger, passBatches),
-    [treasuryLedger, passBatches]
-  );
+  // Treasury Stats & Balances (prefer backend values)
+  const treasuryBalance = stats?.treasuryBalance !== undefined ? stats.treasuryBalance : getTreasuryBalance(treasuryLedger);
+  const treasuryStats = useMemo(() => {
+    if (stats?.treasuryStats) return stats.treasuryStats;
+    return getTreasuryStats(treasuryLedger, passBatches);
+  }, [stats?.treasuryStats, treasuryLedger, passBatches]);
 
   // Active Remaining: Valid govt passes + Treasury-withdrawn passes not yet used
-  const activeRemaining = useMemo(() => getActivePassCount(passBatches, today), [passBatches, today]);
+  const activeRemaining = stats?.remainingPasses !== undefined ? stats.remainingPasses : getActivePassCount(passBatches, today);
 
   // Total Bought from Govt (all govt batches ever)
-  const totalBoughtFromGovt = useMemo(() => {
-    return passBatches
-      .filter(b => b.source !== 'treasury')
-      .reduce((sum, b) => sum + Number(b.totalPasses !== undefined ? b.totalPasses : b.passesBought || 0), 0);
-  }, [passBatches]);
+  const totalBoughtFromGovt = stats?.totalPassesBought !== undefined ? stats.totalPassesBought : passBatches
+    .filter(b => b.source !== 'treasury')
+    .reduce((sum, b) => sum + Number(b.totalPasses !== undefined ? b.totalPasses : b.passesBought || 0), 0);
 
   // Used by Lorries (govt + treasury)
-  const totalUsedByLorries = useMemo(() => {
-    return passBatches.reduce((sum, b) => sum + Number(b.usedPasses || 0), 0);
-  }, [passBatches]);
+  const totalUsedByLorries = stats?.totalPassesUsed !== undefined ? stats.totalPassesUsed : passBatches.reduce((sum, b) => sum + Number(b.usedPasses || 0), 0);
 
-  // Next expiry info
-  const nextExpiry = useMemo(() => getNextExpiry(passBatches, today), [passBatches, today]);
+  // Next expiry info (prefer backend summary if provided)
+  const nextExpiry = stats?.nextExpiry !== undefined ? stats.nextExpiry : getNextExpiry(passBatches, today);
 
   // Expiring soon batches within warning threshold
   const expiringBatches = useMemo(() => {

@@ -13,11 +13,16 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 const seedAdmin = async () => {
   const mongoURI = process.env.MONGO_URI;
   const adminEmail = (process.env.SEED_ADMIN_EMAIL || "admin@bluemetal.com").trim().toLowerCase();
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const adminName = process.env.SEED_ADMIN_NAME || "System Admin";
 
   if (!mongoURI) {
     console.error("[Seed] Error: MONGO_URI is missing in environment variables.");
+    process.exit(1);
+  }
+
+  if (!adminPassword) {
+    console.error("[Seed] Error: SEED_ADMIN_PASSWORD is missing in environment variables.");
     process.exit(1);
   }
 

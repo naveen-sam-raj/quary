@@ -74,8 +74,8 @@ export default function SalesView({
   // FIFO Pass Batch Information & Availability
   const nextBatch = useMemo(() => getNextBatchForDispatch(passBatches), [passBatches]);
   const validPassCount = useMemo(() => getValidPassCount(passBatches), [passBatches]);
-  const requestedPasses = Number(newSale.passesUsed || 0);
-  const isPassInsufficient = requestedPasses > validPassCount;
+  const requestedPasses = 1;
+  const isPassInsufficient = validPassCount < 1;
   const isNoPassesAvailable = validPassCount === 0;
 
   // Compute top agent if not provided from hook
@@ -443,13 +443,14 @@ export default function SalesView({
                 />
               </div>
               <div>
-                <label className="text-slate-400 font-medium block mb-1">Passes Used</label>
+                <label className="text-slate-400 font-medium block mb-1">Transit Passes (1 / load)</label>
                 <input
                   type="number"
-                  min="0"
-                  value={newSale.passesUsed}
-                  onChange={(e) => setNewSale({ ...newSale, passesUsed: e.target.value })}
-                  className="w-full bg-slate-900 border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-400 tabular-nums"
+                  readOnly
+                  disabled
+                  value="1"
+                  className="w-full bg-slate-900/60 border border-white/[0.08] rounded-lg px-3 py-2 text-slate-400 focus:outline-none tabular-nums cursor-not-allowed"
+                  title="Backend automatically consumes 1 transit pass per load dispatch"
                 />
               </div>
             </div>

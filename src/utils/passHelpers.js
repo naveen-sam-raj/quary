@@ -7,24 +7,11 @@ export const DEFAULT_PASS_SETTINGS = {
 };
 
 export const getPassSettings = () => {
-  try {
-    const saved = localStorage.getItem('quarry_pass_settings');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...DEFAULT_PASS_SETTINGS, ...parsed };
-    }
-  } catch (e) {
-    console.warn('Failed to load quarry_pass_settings', e);
-  }
   return DEFAULT_PASS_SETTINGS;
 };
 
-export const savePassSettings = (settings) => {
-  try {
-    localStorage.setItem('quarry_pass_settings', JSON.stringify(settings));
-  } catch (e) {
-    console.warn('Failed to save quarry_pass_settings', e);
-  }
+export const savePassSettings = () => {
+  // Handled via backend /api/settings
 };
 
 // Calculate Date + Days

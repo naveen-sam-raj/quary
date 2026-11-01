@@ -15,35 +15,16 @@ import ReportsView from './components/tabs/ReportsView';
 import { useAgents } from './hooks/useAgents';
 import { useLoads } from './hooks/useLoads';
 import { usePurchases } from './hooks/usePurchases';
+import { usePasses } from './hooks/usePasses';
+import { useTreasury } from './hooks/useTreasury';
+import { useSettings } from './hooks/useSettings';
 
 import {
-  getPassSettings,
-  savePassSettings,
-  consumePassFIFO,
-  INITIAL_BATCHES_WITH_EXPIRY,
-  INITIAL_TREASURY_LEDGER,
-  getActivePassCount,
-  getValidPassCount,
-  getTreasuryBalance,
-  getTreasuryStats,
-  autoReturnExpired,
-  withdrawFromTreasury,
-  returnToTreasuryManual,
-  getNextExpiry,
   addDaysToDate,
-  formatPassDate
+  formatPassDate,
+  getActivePassCount,
+  getNextExpiry
 } from './utils/passHelpers';
-
-const INITIAL_SALES = [
-  { id: 'S-101', date: '2026-10-15', agentName: 'Naveen', subBuyerName: 'Sam', material: '20mm Jalli (Blue Metal)', units: 4, lorryNo: 'TN 45 BX 8891', passesUsed: 1, amount: 18000, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-102', date: '2026-10-15', agentName: 'Naveen', subBuyerName: 'Raj', material: 'M-Sand (Manufactured Sand)', units: 6, lorryNo: 'TN 38 CY 4412', passesUsed: 2, amount: 31500, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-103', date: '2026-10-16', agentName: 'Naveen', subBuyerName: 'Sam', material: 'P-Sand (Plastering Sand)', units: 3, lorryNo: 'TN 45 BX 8891', passesUsed: 1, amount: 16500, status: 'Pending', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-104', date: '2026-10-16', agentName: 'Naveen', subBuyerName: 'Kumar', material: '40mm Jalli', units: 5, lorryNo: 'TN 72 AZ 9901', passesUsed: 1, amount: 21000, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-105', date: '2026-10-17', agentName: 'Naveen', subBuyerName: 'Raj', material: 'Rough Stone / Boulders', units: 8, lorryNo: 'TN 38 CY 4412', passesUsed: 2, amount: 28000, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-106', date: '2026-10-17', agentName: 'Karthik', subBuyerName: 'Mani', material: '20mm Jalli (Blue Metal)', units: 5, lorryNo: 'TN 22 DK 1102', passesUsed: 1, amount: 22500, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-107', date: '2026-10-18', agentName: 'Karthik', subBuyerName: 'Surya', material: 'GSB / Gravel Mix', units: 6, lorryNo: 'TN 22 DK 5541', passesUsed: 2, amount: 19200, status: 'Pending', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-  { id: 'S-108', date: '2026-10-18', agentName: 'Murugan Agencies', subBuyerName: 'Senthil', material: 'M-Sand (Manufactured Sand)', units: 4, lorryNo: 'TN 59 AL 3309', passesUsed: 1, amount: 21000, status: 'Paid', passSource: 'govt', batchNo: 'TN-GEO-2026-881' },
-];
 
 
 
@@ -87,54 +68,27 @@ export default function QuarryManagementApp() {
     isLoading: isLoadingPurchases
   } = usePurchases();
 
-  // Pass Settings State (Default validity: 30 days, warning: 7 days, low stock: 10 passes)
-  const [passSettings, setPassSettings] = useState(() => getPassSettings());
+  // Settings API Hook
+  const { settings: passSettings, updateSettings } = useSettings();
 
-  // Govt Pass Batches State with localStorage persistence
-  const [passBatches, setPassBatches] = useState(() => {
-    try {
-      const saved = localStorage.getItem('quarry_pass_batches');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to load quarry_pass_batches', e);
-    }
-    return INITIAL_BATCHES_WITH_EXPIRY;
-  });
+  // Govt Pass Batches API Hook
+  const {
+    passBatches,
+    summary: passSummary,
+    alerts: passAlerts,
+    createBatch,
+    returnBatch,
+    isLoading: isLoadingPasses
+  } = usePasses(passSettings?.warningDays || 7);
 
-  // Sam Blue Metal Treasury Ledger with localStorage persistence
-  const [treasuryLedger, setTreasuryLedger] = useState(() => {
-    try {
-      const saved = localStorage.getItem('quarry_treasury_ledger');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to load quarry_treasury_ledger', e);
-    }
-    return INITIAL_TREASURY_LEDGER;
-  });
-
-  // Sync passBatches to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('quarry_pass_batches', JSON.stringify(passBatches));
-    } catch (e) {
-      console.warn('Failed to save quarry_pass_batches', e);
-    }
-  }, [passBatches]);
-
-  // Sync treasuryLedger to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('quarry_treasury_ledger', JSON.stringify(treasuryLedger));
-    } catch (e) {
-      console.warn('Failed to save quarry_treasury_ledger', e);
-    }
-  }, [treasuryLedger]);
+  // Sam Blue Metal Treasury API Hook
+  const {
+    treasuryLedger,
+    treasuryStats,
+    balance: treasuryBalance,
+    withdrawPasses,
+    isLoading: isLoadingTreasury
+  } = useTreasury();
 
   // Toast Notification helper
   const showToast = useCallback((msg, type = 'success') => {
@@ -144,74 +98,30 @@ export default function QuarryManagementApp() {
     setTimeout(() => setToast(null), 3200);
   }, []);
 
-  // Auto Return on Expiry: Run on page load, window focus, and periodic interval
-  // Must be idempotent (never process the same batch twice)
-  useEffect(() => {
-    const runAutoReturnCheck = () => {
-      const today = new Date().toISOString().split('T')[0];
-      setPassBatches(prevBatches => {
-        setTreasuryLedger(prevLedger => {
-          const res = autoReturnExpired(prevBatches, prevLedger, today);
-          if (res.changed) {
-            if (res.returnedCount > 0) {
-              showToast(`ℹ ${res.returnedCount} expired passes automatically returned to Sam Blue Metal Treasury`);
-            }
-            return res.updatedLedger;
-          }
-          return prevLedger;
-        });
-
-        // Compute updated batches safely
-        const check = autoReturnExpired(prevBatches, treasuryLedger, today);
-        return check.changed ? check.updatedBatches : prevBatches;
-      });
-    };
-
-    // Run on mount
-    runAutoReturnCheck();
-
-    // Run on window focus
-    window.addEventListener('focus', runAutoReturnCheck);
-
-    // Run every minute (and midnight)
-    const interval = setInterval(runAutoReturnCheck, 60000);
-
-    return () => {
-      window.removeEventListener('focus', runAutoReturnCheck);
-      clearInterval(interval);
-    };
-  }, [showToast, treasuryLedger]);
-
-  const handleSavePassSettings = (newSettings) => {
-    setPassSettings(newSettings);
-    savePassSettings(newSettings);
-    showToast('✓ Pass rules, validity days & alert thresholds updated');
+  const handleSavePassSettings = async (newSettings) => {
+    try {
+      await updateSettings(newSettings);
+    } catch {
+      // toast handled in hook
+    }
   };
 
   // Withdraw Passes from Sam Blue Metal Treasury
-  const handleWithdrawFromTreasury = (count, note) => {
-    const today = new Date().toISOString().split('T')[0];
-    const result = withdrawFromTreasury(treasuryLedger, passBatches, count, note, today);
-    if (!result.success) {
-      showToast(result.error, 'error');
-      return;
+  const handleWithdrawFromTreasury = async (count, note) => {
+    try {
+      await withdrawPasses(count, note);
+    } catch {
+      // toast handled in hook
     }
-    setTreasuryLedger(result.updatedLedger);
-    setPassBatches(result.updatedBatches);
-    showToast(`✓ Withdrawn ${count} passes from Treasury (Batch: ${result.newBatch.batchNo})`);
   };
 
   // Early Return to Treasury (Manual via ⋮ menu)
-  const handleReturnToTreasuryManual = (batchId, note) => {
-    const today = new Date().toISOString().split('T')[0];
-    const result = returnToTreasuryManual(batchId, treasuryLedger, passBatches, note, today);
-    if (!result.success) {
-      showToast(result.error, 'error');
-      return;
+  const handleReturnToTreasuryManual = async (batchId, note) => {
+    try {
+      await returnBatch(batchId, note);
+    } catch {
+      // toast handled in hook
     }
-    setTreasuryLedger(result.updatedLedger);
-    setPassBatches(result.updatedBatches);
-    showToast(`✓ Returned ${result.unused} unused passes to Sam Blue Metal Treasury`);
   };
 
   // Sales Tree Selection State
@@ -253,9 +163,6 @@ export default function QuarryManagementApp() {
     dueDate: addDaysToDate(todayStr, passSettings?.defaultValidityDays || 30)
   });
 
-  // Computed Treasury Balance
-  const treasuryBalance = useMemo(() => getTreasuryBalance(treasuryLedger), [treasuryLedger]);
-
   // Computed Summary Metrics
   const stats = useMemo(() => {
     const totalSalesAmount = sales.reduce((acc, s) => acc + Number(s.amount || 0), 0);
@@ -264,16 +171,28 @@ export default function QuarryManagementApp() {
     const totalExpenses = totalPurchaseAmount + totalPassCost;
     const netProfit = totalSalesAmount - totalExpenses;
 
-    // Total bought from Govt
-    const totalPassesBought = passBatches
-      .filter(b => b.source !== 'treasury')
-      .reduce((acc, b) => acc + Number(b.totalPasses !== undefined ? b.totalPasses : b.passesBought || 0), 0);
+    // Total bought from Govt (from backend summary if available)
+    const totalPassesBought =
+      passSummary?.totalBoughtFromGovt !== undefined
+        ? passSummary.totalBoughtFromGovt
+        : passBatches
+            .filter((b) => b.source !== 'treasury')
+            .reduce((acc, b) => acc + Number(b.totalPasses !== undefined ? b.totalPasses : b.passesBought || 0), 0);
 
-    // Total used by lorries (govt + treasury)
-    const totalPassesUsed = passBatches.reduce((acc, b) => acc + Number(b.usedPasses || 0), 0);
+    // Total used by lorries (from backend summary if available)
+    const totalPassesUsed =
+      passSummary?.usedByLorries !== undefined
+        ? passSummary.usedByLorries
+        : passBatches.reduce((acc, b) => acc + Number(b.usedPasses || 0), 0);
 
-    // Active remaining: valid govt passes + withdrawn treasury passes
-    const remainingPasses = getActivePassCount(passBatches);
+    // Active remaining: valid govt passes + withdrawn treasury passes (from backend summary)
+    const remainingPasses =
+      passSummary?.activeRemaining !== undefined
+        ? passSummary.activeRemaining
+        : getActivePassCount(passBatches);
+
+    const currentTreasuryBalance =
+      treasuryBalance !== undefined ? treasuryBalance : (passSummary?.treasuryBalance || 0);
 
     return {
       totalSalesAmount,
@@ -284,9 +203,12 @@ export default function QuarryManagementApp() {
       totalPassesBought,
       totalPassesUsed,
       remainingPasses,
-      treasuryBalance
+      treasuryBalance: currentTreasuryBalance,
+      treasuryStats,
+      nextExpiry: passSummary?.nextExpiry,
+      lowStock: passSummary?.lowStock
     };
-  }, [sales, purchases, passBatches, treasuryBalance]);
+  }, [sales, purchases, passBatches, passSummary, treasuryBalance, treasuryStats]);
 
   // Filtered Sales for selected agent & sub-buyer
   const filteredSales = useMemo(() => {
@@ -381,7 +303,7 @@ export default function QuarryManagementApp() {
     }
   };
 
-  const handleAddPassBatch = (e) => {
+  const handleAddPassBatch = async (e) => {
     e.preventDefault();
     if (!newPassBatch.passesBought || !newPassBatch.batchNo) return;
     const bought = Number(newPassBatch.passesBought);
@@ -390,38 +312,28 @@ export default function QuarryManagementApp() {
     const validityDays = Number(newPassBatch.validityDays || passSettings?.defaultValidityDays || 30);
     const validTill = newPassBatch.validTill || newPassBatch.dueDate || addDaysToDate(issueDate, validityDays);
 
-    const entry = {
-      id: `GP-0${passBatches.length + 1}`,
-      date: issueDate,
-      batchNo: newPassBatch.batchNo.trim().toUpperCase(),
-      source: 'govt',
-      totalPasses: bought,
-      passesBought: bought,
-      usedPasses: 0,
-      returnedToTreasury: 0,
-      feePerPass: cost,
-      costPerPass: cost,
-      totalCost: bought * cost,
-      authority: 'Dept of Geology & Mining',
-      issueDate,
-      validityDays,
-      validTill,
-      dueDate: validTill,
-      status: 'Active',
-      surrenderedPasses: 0,
-      surrenderNote: ''
-    };
-    setPassBatches([entry, ...passBatches]);
-    setNewPassBatch({
-      batchNo: '',
-      passesBought: '',
-      costPerPass: 350,
-      issueDate: todayStr,
-      validityDays: passSettings?.defaultValidityDays || 30,
-      validTill: addDaysToDate(todayStr, passSettings?.defaultValidityDays || 30),
-      dueDate: addDaysToDate(todayStr, passSettings?.defaultValidityDays || 30)
-    });
-    showToast(`✓ Procured ${bought} Govt Transit Passes (Valid till ${formatPassDate(validTill)})`);
+    try {
+      await createBatch({
+        batchNo: newPassBatch.batchNo.trim().toUpperCase(),
+        totalPasses: bought,
+        feePerPass: cost,
+        issueDate,
+        validityDays,
+        validTill,
+        note: newPassBatch.notes || ''
+      });
+      setNewPassBatch({
+        batchNo: '',
+        passesBought: '',
+        costPerPass: 350,
+        issueDate: todayStr,
+        validityDays: passSettings?.defaultValidityDays || 30,
+        validTill: addDaysToDate(todayStr, passSettings?.defaultValidityDays || 30),
+        dueDate: addDaysToDate(todayStr, passSettings?.defaultValidityDays || 30)
+      });
+    } catch {
+      // toast handled in hook
+    }
   };
 
   const nextExpiringBatch = useMemo(() => getNextExpiry(passBatches), [passBatches]);
@@ -555,9 +467,7 @@ export default function QuarryManagementApp() {
                 key="pass"
                 stats={stats}
                 passBatches={passBatches}
-                setPassBatches={setPassBatches}
                 treasuryLedger={treasuryLedger}
-                setTreasuryLedger={setTreasuryLedger}
                 sales={sales}
                 newPassBatch={newPassBatch}
                 setNewPassBatch={setNewPassBatch}

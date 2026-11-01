@@ -49,6 +49,18 @@ export function useLoads() {
     });
   }, [rawLoads]);
 
+  const invalidateQueriesAfterLoadChange = () => {
+    queryClient.invalidateQueries({ queryKey: ['loads'] });
+    queryClient.invalidateQueries({ queryKey: ['passes'] });
+    queryClient.invalidateQueries({ queryKey: ['pass-batches'] });
+    queryClient.invalidateQueries({ queryKey: ['passes-summary'] });
+    queryClient.invalidateQueries({ queryKey: ['pass-alerts'] });
+    queryClient.invalidateQueries({ queryKey: ['treasury'] });
+    queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });
+    queryClient.invalidateQueries({ queryKey: ['treasury-ledger'] });
+    queryClient.invalidateQueries({ queryKey: ['agents'] });
+  };
+
   // 3. Add Load Mutation
   const addLoadMutation = useMutation({
     mutationFn: async (saleData) => {
@@ -70,18 +82,29 @@ export function useLoads() {
       return res.data?.data;
     },
     onSuccess: (data) => {
-      // Invalidate loads, passes, treasury, and agents summary
-      queryClient.invalidateQueries({ queryKey: ['loads'] });
-      queryClient.invalidateQueries({ queryKey: ['passes'] });
-      queryClient.invalidateQueries({ queryKey: ['pass-batches'] });
-      queryClient.invalidateQueries({ queryKey: ['treasury'] });
-      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      invalidateQueriesAfterLoadChange();
       const lorry = data?.load?.lorryNo || '';
       const passInfo = data?.passFrom?.batchNo ? ` (Pass: ${data.passFrom.batchNo})` : '';
       toast.success(`✓ Sale dispatched for Lorry ${lorry}${passInfo}`);
     },
     onError: (err) => {
       const msg = err.response?.data?.message || err.message || 'Failed to dispatch load';
+      toast.error(msg);
+    }
+  });
+
+  // 4. Delete Load Mutation
+  const deleteLoadMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/loads/${id}`);
+      return id;
+    },
+    onSuccess: () => {
+      invalidateQueriesAfterLoadChange();
+      toast.success('Load deleted and pass released back to batch');
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to delete load';
       toast.error(msg);
     }
   });
@@ -93,10 +116,18 @@ export function useLoads() {
     [addLoadMutation]
   );
 
+  const deleteLoad = useCallback(
+    (id) => {
+      return deleteLoadMutation.mutateAsync(id);
+    },
+    [deleteLoadMutation]
+  );
+
   return {
     loads,
     sales: loads, // alias for components expecting 'sales'
     addLoad,
+    deleteLoad,
     isLoading: loadsQuery.isLoading,
     isError: loadsQuery.isError,
     error: loadsQuery.error,
