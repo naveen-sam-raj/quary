@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, X, Check, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
+import {
+  Settings,
+  X,
+  Check,
+  Clock,
+  AlertTriangle,
+  ShieldCheck,
+  Download,
+  Database,
+  ShieldAlert
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { downloadBackupJson } from '../../utils/exportHelpers';
 
 export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSettings }) {
+  const { isAdmin } = useAuth();
   const [validityDays, setValidityDays] = useState(settings?.defaultValidityDays || 30);
   const [warningDays, setWarningDays] = useState(settings?.warningDays || 7);
   const [lowStockLimit, setLowStockLimit] = useState(settings?.lowStockLimit || 10);
+  const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -27,12 +41,25 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSaveSettings({
-      defaultValidityDays: Number(validityDays) || 30,
-      warningDays: Number(warningDays) || 7,
-      lowStockLimit: Number(lowStockLimit) || 10
-    });
+    if (onSaveSettings) {
+      onSaveSettings({
+        defaultValidityDays: Number(validityDays) || 30,
+        warningDays: Number(warningDays) || 7,
+        lowStockLimit: Number(lowStockLimit) || 10
+      });
+    }
     onClose();
+  };
+
+  const handleDownloadBackup = async () => {
+    try {
+      setIsDownloadingBackup(true);
+      await downloadBackupJson();
+    } catch {
+      // toast handled in downloadBackupJson
+    } finally {
+      setIsDownloadingBackup(false);
+    }
   };
 
   return (
@@ -51,10 +78,10 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
             </div>
             <div>
               <h3 className="text-sm font-bold text-white tracking-tight">
-                Govt Pass Expiry & Treasury Rules
+                ERP System & Pass Settings
               </h3>
               <p className="text-[11px] text-slate-400">
-                Configure default validity, alert thresholds and low-stock limits
+                Configure validity, alert thresholds and operational backups
               </p>
             </div>
           </div>
@@ -132,6 +159,37 @@ export default function PassSettingsModal({ isOpen, onClose, settings, onSaveSet
               When total active passes fall below this limit, a low stock warning banner and notification will appear.
             </p>
           </div>
+
+          {/* Admin-only Operational Backup Download */}
+          {isAdmin && (
+            <div className="pt-3.5 border-t border-white/[0.08] space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <label className="text-slate-200 font-bold block flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5 text-amber-400" />
+                    <span>System Operational Backup</span>
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Full JSON snapshot of agents, loads, expenses, passes and ledger.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadBackup}
+                  disabled={isDownloadingBackup}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                  title="Download operational JSON backup"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isDownloadingBackup ? 'Exporting...' : 'Download Backup'}</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-md">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Keep this file private</span>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/[0.06]">
             <button

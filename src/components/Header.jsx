@@ -12,7 +12,8 @@ import {
   ChevronDown,
   AlertTriangle,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  Settings
 } from 'lucide-react';
 import { getBatchStatus, formatPassDate } from '../utils/passHelpers';
 
@@ -27,7 +28,8 @@ export default function Header({
   isDarkTheme,
   setIsDarkTheme,
   onOpenSearch,
-  onExport
+  onExport,
+  onOpenSettings
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef(null);
@@ -194,6 +196,17 @@ export default function Header({
         >
           {isDarkTheme ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+
+        {/* Global Settings */}
+        {onOpenSettings && (
+          <button
+            onClick={onOpenSettings}
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-white/[0.08] transition cursor-pointer"
+            title="System & Pass Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Notifications Bell */}
         <div className="relative" ref={bellRef}>

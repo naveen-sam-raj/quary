@@ -18,6 +18,7 @@ import { usePurchases } from './hooks/usePurchases';
 import { usePasses } from './hooks/usePasses';
 import { useTreasury } from './hooks/useTreasury';
 import { useSettings } from './hooks/useSettings';
+import PassSettingsModal from './components/passes/PassSettingsModal';
 
 import {
   addDaysToDate,
@@ -43,6 +44,7 @@ export default function QuarryManagementApp() {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Dynamic Agents Management & Persistence Hook
   const {
@@ -391,6 +393,15 @@ export default function QuarryManagementApp() {
             setActiveTab('reports');
             showToast('Opening Date-Range Quarry Reports');
           }}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
+
+        {/* Global Settings Modal */}
+        <PassSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={passSettings}
+          onSaveSettings={handleSavePassSettings}
         />
 
         {/* Main View Container */}
